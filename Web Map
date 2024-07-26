@@ -1,0 +1,93 @@
+import folium
+import base64
+
+# Function to create a popup with an image from a local file
+def create_popup(image_path, name):
+    try:
+        # Read the image file and encode it in base64
+        with open(image_path, "rb") as image_file:
+            encoded_string = base64.b64encode(image_file.read()).decode()
+        
+        # Create HTML for the popup
+        popup_html = f"""
+        <h2>{name}</h2><br/>
+        <img src="data:image/jpeg;base64,{encoded_string}" alt="Popup Image" style="max-width:100%;max-height:100%;">
+        """
+        return folium.Popup(popup_html, max_width=300)
+    except FileNotFoundError:
+        return folium.Popup(f"<h2>{name}</h2><br/><p>Image not found at {image_path}</p>", max_width=300)
+
+# Create a map object
+mapObj = folium.Map(
+    location=[23.1990663, 77.0762346],  # Centered over India
+    zoom_start=5,
+    tiles='OpenStreetMap'
+)
+
+# Add Tile Layers
+folium.TileLayer('OpenStreetMap', attr='© OpenStreetMap contributors').add_to(mapObj)
+folium.TileLayer(
+    'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+    name='OpenTopMap',
+    attr='© OpenStreetMap contributors, © OpenTopoMap (CC-BY-SA)',
+).add_to(mapObj)
+
+# Define style for GeoJSON
+bordersStyle = {
+    'color': 'green',
+    'weight': 2,
+    'fillColor': 'blue',
+    'fillOpacity': 0.3
+}
+
+# Add GeoJSON layers
+folium.GeoJson(
+    'states_india.geojson.txt',
+    name='India',
+    style_function=lambda x: bordersStyle
+).add_to(mapObj)
+
+folium.GeoJson(
+    'srilanka.geojson.txt',
+    name='Srilanka',
+    style_function=lambda x: bordersStyle
+).add_to(mapObj)
+
+# List of locations with coordinates, corresponding image paths, and labels
+locations = [
+    (23.8020471, 86.3930501, "/content/iitism.jpg", "IIT ISM"),
+    (19.0821775, 72.7163754, "/content/bombay.jnp.jpeg", "IIT BOMBAY"),
+    (13.0474733, 80.0442004, "/content/madras.jnp.jpeg", "IIT MADRAS"),
+    (26.4471501, 80.2559816, "/content/kanpur.jnp.jpeg", "IIT KANPUR"),
+    (22.3308833, 87.1800976, "/content/kgp.jnp.jpeg", "IIT KGP"),
+    (17.412281, 78.2432346, "/content/hyd.jnp.jpeg", "IIT HYDERABAD"),
+    (29.8613631, 77.8536262, "/content/roorkee.jnp.jpeg", "IIT ROORKEE"),
+    (26.1429548, 91.538073, "/content/guw.jnp.jpeg", "IIT GUWAHATI"),
+    (28.6436846, 76.7635825, "/content/delhi.jnp.jpeg", "IIT DELHI"),
+    (25.3207397, 82.9087077, "/content/bhu.jnp.jpeg", "IIT BHU")
+]
+
+# Add markers with circles and popups for each location
+for loc in locations:
+    lat, lon, image_path, name = loc
+    folium.Marker(
+        location=(lat, lon),
+        icon=folium.Icon(color='red'),
+        popup=create_popup(image_path, name)
+    ).add_to(mapObj)
+    folium.Circle(
+        location=(lat, lon),
+        radius=50000,
+        color='red',
+        fill=True,
+        fill_color='red',
+        popup=name
+    ).add_to(mapObj)
+
+# Add Layer Control
+folium.LayerControl().add_to(mapObj)
+
+# Save the map to an HTML file
+mapObj.save('map.html')
+
+mapObj
